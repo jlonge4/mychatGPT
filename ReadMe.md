@@ -6,7 +6,7 @@ After seeing much desire for a GPT chatbot that uses your own PDFs, I decided to
 
 ## Installation
 
-To set up this project, first you need to add your OPEN_AI_API key as an env variable, or add it on line 13 of the .py file and deleting line 12. Next, run pip install -r /path/to/requirements.txt
+To set up this project, first you need to add your OPENAI_API key as an env variable, or add it on line 13 of the .py file and deleting line 12. Next, run pip install -r /path/to/requirements.txt
 
 
 ## Usage
