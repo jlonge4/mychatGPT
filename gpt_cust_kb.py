@@ -30,7 +30,7 @@ def pdf_to_index(pdf_path, save_path):
 def query_index(query_u):
     # deprecated
     # index = GPTVectorStoreIndex.load_from_disk(index_path, service_context=service_context)
-    PATH = 'C/gpt_indexes'
+    PATH = 'gpt_indexes'
     pdf_to_use = get_manual()
     storage_context = StorageContext.from_defaults(persist_dir=f"{PATH}/{pdf_to_use}")
     index = load_index_from_storage(storage_context, service_context=service_context)
@@ -47,7 +47,7 @@ def clear_convo():
     st.session_state['generated'] = []
 
 def save_pdf(file):
-    PATH = 'C/gpt_indexes'
+    PATH = 'gpt_indexes'
     if not os.path.exists(PATH):
         os.makedirs(PATH)
         pdf_to_index(pdf_path='C:/'+file, save_path=f'{PATH}/{file}')
