@@ -64,7 +64,7 @@ def get_manual():
 
 def init():
     st.set_page_config(page_title='PDF ChatBot', page_icon=':robot_face: ') 
-    st.sidebar.title('Available PDFs')
+    st.sidebar.title('Available PDF')
 
 
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         submit_button =st.form_submit_button(label="Submit")
 
     if user_input and submit_button:
-        query_index(index_path='./test_chat.json',query_u=user_input)
+        query_index(query_u=user_input)
 
     if st.session_state['generated']:
         for i in range(len(st.session_state['generated'])-1, -1, -1): 
