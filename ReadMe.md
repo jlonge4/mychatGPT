@@ -8,6 +8,7 @@ After seeing much desire for a GPT chatbot that uses your own PDFs, I decided to
 
 All you need to set up this project is add your OPEN_AI_API key as an env variable, or copy it in plain text on line 13 of the .py file and deleting line 12
 
+
 ## Usage
 
 To use the project, save the PDF's you want to query to your C drive (developed on a windows machine, if you wish to change this, you can edit line 53 and 56 to have to PDF uploader pull from whatever dir you like by replacing the 'C:/'). Once you have uploaded your PDFs, refresh the browser, select a manual, and ask away!
