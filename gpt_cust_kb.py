@@ -64,12 +64,13 @@ def get_manual():
 
 def init():
     st.set_page_config(page_title='PDF ChatBot', page_icon=':robot_face: ') 
-    st.sidebar.title('Available manuals')
+    st.sidebar.title('Available PDFs')
 
 
 
 if __name__ == '__main__':
-    
+    init()
+
     clear_button = st.sidebar.button("Clear Conversation", key="clear") 
     if clear_button:
         clear_convo()
