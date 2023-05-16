@@ -3,3 +3,4 @@ langchain
 streamlit
 streamlit_chat
 pathlib
+openai
