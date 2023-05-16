@@ -20,22 +20,23 @@ def pdf_to_index(pdf_path, save_path):
     loader = PDFReader()
     documents = loader.load_data(file=Path(pdf_path))
     index = GPTVectorStoreIndex.from_documents(documents)
+    # deprecated
     # index.save_to_disk(save_path)
     index.storage_context.persist(persist_dir=save_path)
     print('saved to disk')
 
 
 #query index using GPT
-def query_index(index_path, query_u):
+def query_index(query_u):
+    # deprecated
     # index = GPTVectorStoreIndex.load_from_disk(index_path, service_context=service_context)
     PATH = 'C/gpt_indexes'
-    # rebuild storage context
-    storage_context = StorageContext.from_defaults(persist_dir=f"{PATH}/test.json")
-
-    # load index
+    pdf_to_use = get_manual()
+    storage_context = StorageContext.from_defaults(persist_dir=f"{PATH}/{pdf_to_use}")
     index = load_index_from_storage(storage_context, service_context=service_context)
     query_engine = index.as_query_engine()
     response = query_engine.query(query_u)
+    # deprecated
     # response=index.query(query_u)
     st.session_state.past.append(query_u)
     st.session_state.generated.append(response.response)   
@@ -51,13 +52,15 @@ def save_pdf(file):
         os.makedirs(PATH)
         pdf_to_index(pdf_path='C:/'+file, save_path=f'{PATH}/{file}')
         print('saving index')
+    else:
+        pdf_to_index(pdf_path='C:/'+file, save_path=f'{PATH}/{file}')
+        print('saving index')
 
 
 def get_manual():
-    manual_names = []
-    manual = st.sidebar. radio("Choose a manual:", ("Yukon Test PDF", "LLM Research"))
-    if manual== "Yukon Test":
-        return f"./{name_of_pdf}.json"
+    manual = st.session_state['manual']
+    print(manual)
+    return manual
 
 def init():
     st.set_page_config(page_title='PDF ChatBot', page_icon=':robot_face: ') 
@@ -92,7 +95,11 @@ if __name__ == '__main__':
             message(st.session_state['generated'][i], key=str(i))
             message(st.session_state['past'][i], is_user=True, key=str(i) + "user")
     
-    st.sidebar.radio("Choose a manual:", ("Yukon Test PDF", "LLM Research"))
+    manual_names = os.listdir('C/gpt_indexes')
+    manual = st.sidebar. radio("Choose a manual:", manual_names, key='init')
+    st.session_state['manual'] = manual
     file = st.file_uploader("Choose a PDF file to index...")
-    save_pdf(file.name)
+    clicked = st.button('Upload File', key='Upload')
+    if file and clicked:
+        save_pdf(file.name)
     
