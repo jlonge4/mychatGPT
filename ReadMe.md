@@ -1,17 +1,16 @@
-# Project Name
+# GPT -> PDF Chatbot
 
-GPT -> PDF Chat
 
 After seeing much desire for a GPT chatbot that uses your own PDFs, I decided to code this project. I hope you enjoy it!
 
 ## Installation
 
-To set up this project, first you need to add your OPENAI_API key as an env variable, or add it on line 13 of the .py file and deleting line 12. Next, run pip install -r /path/to/requirements.txt
+To set up this project, first you need to add your OPENAI_API key as an env variable, or add it on line 13 of the .py file and deleting line 12. Next, run pip install -r /path/to/requirements.txt. Lastly, put all of your PDFs you wish to chat with in a central repository, and add the path to PATH_TO_PDFs in the .py file.
 
 
 ## Usage
 
-To use the project, save the PDF's you want to query to your C drive (developed on a windows machine, if you wish to change this, you can edit line 53 and 56 to have to PDF uploader pull from whatever dir you like by replacing the 'C:/'). Once you have uploaded your PDFs, refresh the browser, select a manual, and ask away!
+Use the command python -m streamlit run "path/to/project/gpt_custkb.py". This will start the app in your browser. Once you have uploaded your PDFs, refresh the browser, select a manual, and ask away!
 
 ## History
 
