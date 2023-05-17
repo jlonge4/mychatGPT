@@ -14,6 +14,11 @@ os.environ['OPENAI_API_KEY'] = key
 llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo"))
 service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor)
 
+PATH_TO_PDFS = 'PATH_TO_WHERE_YOUR_PDFs_RESIDE'
+PATH_TO_INDEXES = 'GPT_INDEXES'
+if not os.path.exists(PATH_TO_INDEXES):
+        os.makedirs(PATH_TO_INDEXES)
+
 #build index from PDF
 def pdf_to_index(pdf_path, save_path):
     PDFReader = download_loader('PDFReader')
@@ -30,9 +35,8 @@ def pdf_to_index(pdf_path, save_path):
 def query_index(query_u):
     # deprecated
     # index = GPTVectorStoreIndex.load_from_disk(index_path, service_context=service_context)
-    PATH = 'gpt_indexes'
     pdf_to_use = get_manual()
-    storage_context = StorageContext.from_defaults(persist_dir=f"{PATH}/{pdf_to_use}")
+    storage_context = StorageContext.from_defaults(persist_dir=f"{PATH_TO_INDEXES}/{pdf_to_use}")
     index = load_index_from_storage(storage_context, service_context=service_context)
     query_engine = index.as_query_engine()
     response = query_engine.query(query_u)
@@ -47,13 +51,12 @@ def clear_convo():
     st.session_state['generated'] = []
 
 def save_pdf(file):
-    PATH = 'gpt_indexes'
-    if not os.path.exists(PATH):
-        os.makedirs(PATH)
-        pdf_to_index(pdf_path='C:/'+file, save_path=f'{PATH}/{file}')
+    if not os.path.exists(PATH_TO_INDEXES):
+        os.makedirs(PATH_TO_INDEXES)
+        pdf_to_index(pdf_path=f'{PATH_TO_PDFS}/{file}', save_path=f'{PATH_TO_INDEXES}/{file}')
         print('saving index')
     else:
-        pdf_to_index(pdf_path='C:/'+file, save_path=f'{PATH}/{file}')
+        pdf_to_index(pdf_path=f'{PATH_TO_PDFS}/{file}', save_path=f'{PATH_TO_INDEXES}/{file}')
         print('saving index')
 
 
@@ -96,7 +99,7 @@ if __name__ == '__main__':
             message(st.session_state['generated'][i], key=str(i))
             message(st.session_state['past'][i], is_user=True, key=str(i) + "user")
     
-    manual_names = os.listdir('C/gpt_indexes')
+    manual_names = os.listdir(PATH_TO_INDEXES)
     manual = st.sidebar. radio("Choose a manual:", manual_names, key='init')
     st.session_state['manual'] = manual
     file = st.file_uploader("Choose a PDF file to index...")
