@@ -1,7 +1,7 @@
 # GPT -> PDF Chatbot
 
 
-After seeing much desire for a GPT chatbot that uses your own PDFs, I decided to code this project. I hope you enjoy it!
+After seeing much desire for a GPT chatbot that uses your own PDFs (and now docx!), I decided to code this project. I hope you enjoy it!
 
 ## Installation
 
