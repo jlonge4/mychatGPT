@@ -4,3 +4,5 @@ streamlit
 streamlit_chat
 pathlib
 openai
+PyPDF2
+doc2text

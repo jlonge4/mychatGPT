@@ -14,34 +14,55 @@ os.environ['OPENAI_API_KEY'] = key
 llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo"))
 service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor)
 
+PATH_TO_DOCS = 'PATH_TO_WHERE_YOUR_DOCX_RESIDE'
 PATH_TO_PDFS = 'PATH_TO_WHERE_YOUR_PDFs_RESIDE'
 PATH_TO_INDEXES = 'GPT_INDEXES'
 if not os.path.exists(PATH_TO_INDEXES):
         os.makedirs(PATH_TO_INDEXES)
 
 #build index from PDF
-def pdf_to_index(pdf_path, save_path):
+def pdf_to_index(file):
+    if not os.path.exists(PATH_TO_INDEXES):
+        os.makedirs(PATH_TO_INDEXES)
+
+        pdf_path=f'{PATH_TO_PDFS}/{file}'
+        save_path=f'{PATH_TO_INDEXES}/{file}'
+    else:
+        pdf_path=f'{PATH_TO_PDFS}/{file}'
+        save_path=f'{PATH_TO_INDEXES}/{file}'
+
     PDFReader = download_loader('PDFReader')
     loader = PDFReader()
     documents = loader.load_data(file=Path(pdf_path))
     index = GPTVectorStoreIndex.from_documents(documents)
-    # deprecated
-    # index.save_to_disk(save_path)
     index.storage_context.persist(persist_dir=save_path)
-    print('saved to disk')
+
+
+#build index from docx
+def docx_to_index(file): 
+    if not os.path.exists(PATH_TO_INDEXES):
+        os.makedirs(PATH_TO_INDEXES)
+        docx_path=f'{PATH_TO_DOCS}/{file}'
+        save_path=f'{PATH_TO_INDEXES}/{file}'
+    else:
+        docx_path=f'{PATH_TO_DOCS}/{file}'
+        save_path=f'{PATH_TO_INDEXES}/{file}' 
+
+    DocxReader = download_loader("DocxReader")
+    loader = DocxReader()
+    documents = loader.load_data(file=Path(docx_path))
+    index = GPTVectorStoreIndex.from_documents(documents) 
+    index.storage_context.persist(persist_dir=save_path) 
 
 
 #query index using GPT
 def query_index(query_u):
-    # deprecated
-    # index = GPTVectorStoreIndex.load_from_disk(index_path, service_context=service_context)
-    pdf_to_use = get_manual()
-    storage_context = StorageContext.from_defaults(persist_dir=f"{PATH_TO_INDEXES}/{pdf_to_use}")
+    index_to_use = get_manual()
+    storage_context = StorageContext.from_defaults(persist_dir=f"{PATH_TO_INDEXES}/{index_to_use}")
     index = load_index_from_storage(storage_context, service_context=service_context)
     query_engine = index.as_query_engine()
     response = query_engine.query(query_u)
-    # deprecated
-    # response=index.query(query_u)
+    
     st.session_state.past.append(query_u)
     st.session_state.generated.append(response.response)   
 
@@ -49,15 +70,6 @@ def query_index(query_u):
 def clear_convo():
     st.session_state['past'] = []
     st.session_state['generated'] = []
-
-def save_pdf(file):
-    if not os.path.exists(PATH_TO_INDEXES):
-        os.makedirs(PATH_TO_INDEXES)
-        pdf_to_index(pdf_path=f'{PATH_TO_PDFS}/{file}', save_path=f'{PATH_TO_INDEXES}/{file}')
-        print('saving index')
-    else:
-        pdf_to_index(pdf_path=f'{PATH_TO_PDFS}/{file}', save_path=f'{PATH_TO_INDEXES}/{file}')
-        print('saving index')
 
 
 def get_manual():
@@ -67,8 +79,7 @@ def get_manual():
 
 def init():
     st.set_page_config(page_title='PDF ChatBot', page_icon=':robot_face: ') 
-    st.sidebar.title('Available PDF')
-
+    st.sidebar.title('Available PDFs')
 
 
 if __name__ == '__main__':
@@ -105,5 +116,13 @@ if __name__ == '__main__':
     file = st.file_uploader("Choose a PDF file to index...")
     clicked = st.button('Upload File', key='Upload')
     if file and clicked:
-        save_pdf(file.name)
+        extension = file.name[-4:]
+        
+        match extension:
+            case 'docx':
+                docx_to_index(file.name)
+                print(file.name)
+            case '.pdf':
+                pdf_to_index(file.name)
+        
     
