@@ -113,9 +113,12 @@ if __name__ == '__main__':
         
         match extension:
             case 'docx':
-                docx_to_index(file)
-                print(file.name)
+                with st.spinner('Wait for it...'):
+                    docx_to_index(file)
+                st.success('Indexed {0}! Refresh to update indexes.'.format(file.name))
             case '.pdf':
-                pdf_to_index(file)
+                with st.spinner('Wait for it...'):
+                    pdf_to_index(file)
+                st.success('Indexed {0}! Refresh to update indexes.'.format(file.name))
      
     
