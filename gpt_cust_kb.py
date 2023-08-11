@@ -14,45 +14,37 @@ os.environ['OPENAI_API_KEY'] = key
 llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo"))
 service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor)
 
-PATH_TO_DOCS = 'PATH_TO_WHERE_YOUR_DOCX_RESIDE'
-PATH_TO_PDFS = 'PATH_TO_WHERE_YOUR_PDFs_RESIDE'
+PATH_TO_DOCS = 'DOCs'
+PATH_TO_PDFS = 'PDFs'
 PATH_TO_INDEXES = 'GPT_INDEXES'
+
 if not os.path.exists(PATH_TO_INDEXES):
         os.makedirs(PATH_TO_INDEXES)
+if not os.path.exists(PATH_TO_PDFS):
+        os.makedirs(PATH_TO_PDFS)
+if not os.path.exists(PATH_TO_DOCS):
+    os.makedirs(PATH_TO_DOCS)
 
 #build index from PDF
 def pdf_to_index(file):
-    if not os.path.exists(PATH_TO_INDEXES):
-        os.makedirs(PATH_TO_INDEXES)
-
-        pdf_path=f'{PATH_TO_PDFS}/{file}'
-        save_path=f'{PATH_TO_INDEXES}/{file}'
-    else:
-        pdf_path=f'{PATH_TO_PDFS}/{file}'
-        save_path=f'{PATH_TO_INDEXES}/{file}'
-
+    with open(os.path.join(PATH_TO_PDFS,file.name), "wb") as f:
+        f.write(file.getbuffer())
     PDFReader = download_loader('PDFReader')
     loader = PDFReader()
-    documents = loader.load_data(file=Path(pdf_path))
+    documents = loader.load_data(file=Path(os.path.join(PATH_TO_PDFS,file.name)))
     index = GPTVectorStoreIndex.from_documents(documents)
-    index.storage_context.persist(persist_dir=save_path)
+    index.storage_context.persist(persist_dir=os.path.join(PATH_TO_INDEXES,file.name))
 
 
 #build index from docx
 def docx_to_index(file): 
-    if not os.path.exists(PATH_TO_INDEXES):
-        os.makedirs(PATH_TO_INDEXES)
-        docx_path=f'{PATH_TO_DOCS}/{file}'
-        save_path=f'{PATH_TO_INDEXES}/{file}'
-    else:
-        docx_path=f'{PATH_TO_DOCS}/{file}'
-        save_path=f'{PATH_TO_INDEXES}/{file}' 
-
+    with open(os.path.join(PATH_TO_DOCS,file.name), "wb") as f:
+        f.write(file.getbuffer())
     DocxReader = download_loader("DocxReader")
     loader = DocxReader()
-    documents = loader.load_data(file=Path(docx_path))
+    documents = loader.load_data(file=Path(os.path.join(PATH_TO_DOCS,file.name)))
     index = GPTVectorStoreIndex.from_documents(documents) 
-    index.storage_context.persist(persist_dir=save_path) 
+    index.storage_context.persist(persist_dir=os.path.join(PATH_TO_INDEXES,file.name)) 
 
 
 #query index using GPT
@@ -76,6 +68,7 @@ def get_manual():
     manual = st.session_state['manual']
     print(manual)
     return manual
+
 
 def init():
     st.set_page_config(page_title='PDF ChatBot', page_icon=':robot_face: ') 
@@ -120,9 +113,9 @@ if __name__ == '__main__':
         
         match extension:
             case 'docx':
-                docx_to_index(file.name)
+                docx_to_index(file)
                 print(file.name)
             case '.pdf':
-                pdf_to_index(file.name)
-        
+                pdf_to_index(file)
+     
     
