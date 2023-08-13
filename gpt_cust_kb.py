@@ -1,4 +1,5 @@
-from llama_index import download_loader, SimpleDirectoryReader, ServiceContext, LLMPredictor, GPTVectorStoreIndex, PromptHelper, StorageContext, load_index_from_storage
+from llama_index import download_loader, SimpleDirectoryReader, ServiceContext, LLMPredictor, GPTVectorStoreIndex, PromptHelper 
+from llama_index import StorageContext, load_index_from_storage
 from pathlib import Path
 import openai
 import os
@@ -7,12 +8,19 @@ import streamlit as st
 from streamlit_chat import message
 import time
 from langchain.chat_models import ChatOpenAI
+from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from llama_index import LangchainEmbedding, ServiceContext
 
 
 key = os.getenv("OPENAI_API_KEY")
 os.environ['OPENAI_API_KEY'] = key
+
+embed_model = LangchainEmbedding(
+  HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+)
+
 llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo"))
-service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor)
+service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor, embed_model=embed_model)
 
 PATH_TO_DOCS = 'DOCs'
 PATH_TO_PDFS = 'PDFs'
@@ -31,8 +39,8 @@ def pdf_to_index(file):
         f.write(file.getbuffer())
     PDFReader = download_loader('PDFReader')
     loader = PDFReader()
-    documents = loader.load_data(file=Path(os.path.join(PATH_TO_PDFS,file.name)))
-    index = GPTVectorStoreIndex.from_documents(documents)
+    documents = loader.load_data(file=Path(f'{PATH_TO_PDFS}/{file.name}'))
+    index = GPTVectorStoreIndex.from_documents(documents, service_context=service_context)
     index.storage_context.persist(persist_dir=os.path.join(PATH_TO_INDEXES,file.name))
 
 
@@ -43,7 +51,7 @@ def docx_to_index(file):
     DocxReader = download_loader("DocxReader")
     loader = DocxReader()
     documents = loader.load_data(file=Path(os.path.join(PATH_TO_DOCS,file.name)))
-    index = GPTVectorStoreIndex.from_documents(documents) 
+    index = GPTVectorStoreIndex.from_documents(documents, service_context=service_context) 
     index.storage_context.persist(persist_dir=os.path.join(PATH_TO_INDEXES,file.name)) 
 
 
@@ -81,6 +89,10 @@ if __name__ == '__main__':
     clear_button = st.sidebar.button("Clear Conversation", key="clear") 
     if clear_button:
         clear_convo()
+
+    refresh_button = st.sidebar.button("Refresh Indexes", key="ref") 
+    if refresh_button:
+        st.session_state['manual'] = []
 
     if 'generated' not in st.session_state:
         st.session_state['generated'] = []
@@ -120,5 +132,3 @@ if __name__ == '__main__':
                 with st.spinner('Wait for it...'):
                     pdf_to_index(file)
                 st.success('Indexed {0}! Refresh to update indexes.'.format(file.name))
-     
-    
