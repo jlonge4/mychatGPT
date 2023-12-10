@@ -1,134 +1,162 @@
-from llama_index import download_loader, SimpleDirectoryReader, ServiceContext, LLMPredictor, GPTVectorStoreIndex, PromptHelper 
-from llama_index import StorageContext, load_index_from_storage
-from pathlib import Path
-import openai
-import os
-from langchain import OpenAI
 import streamlit as st
-from streamlit_chat import message
-import time
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
-from llama_index import LangchainEmbedding, ServiceContext
-
-
-key = os.getenv("OPENAI_API_KEY")
-os.environ['OPENAI_API_KEY'] = key
-
-embed_model = LangchainEmbedding(
-  HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+from haystack.pipelines import Pipeline
+from haystack.document_stores import FAISSDocumentStore
+from haystack.nodes import (
+    EmbeddingRetriever,
+    TextConverter,
+    FileTypeClassifier,
+    PDFToTextConverter,
+    MarkdownConverter,
+    DocxToTextConverter,
+    PreProcessor,
+    PromptNode,
 )
+import os
 
-llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo"))
-service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor, embed_model=embed_model)
 
-PATH_TO_DOCS = 'DOCs'
-PATH_TO_PDFS = 'PDFs'
-PATH_TO_INDEXES = 'GPT_INDEXES'
+def get_doc_store():
+    try:
+        document_store = FAISSDocumentStore.load(
+            index_path="my_index.faiss", config_path="my_config.json"
+        )
+    except Exception:
+        document_store = FAISSDocumentStore(embedding_dim=768)
+        document_store.save(index_path="my_index.faiss", config_path="my_config.json")
+    return document_store
 
-if not os.path.exists(PATH_TO_INDEXES):
-        os.makedirs(PATH_TO_INDEXES)
-if not os.path.exists(PATH_TO_PDFS):
-        os.makedirs(PATH_TO_PDFS)
-if not os.path.exists(PATH_TO_DOCS):
-    os.makedirs(PATH_TO_DOCS)
 
-#build index from PDF
-def pdf_to_index(file):
-    with open(os.path.join(PATH_TO_PDFS,file.name), "wb") as f:
+def indexing_pipe(filename):
+    document_store = get_doc_store()
+    file_type_classifier = FileTypeClassifier()
+
+    text_converter = TextConverter()
+    pdf_converter = PDFToTextConverter()
+    md_converter = MarkdownConverter()
+    docx_converter = DocxToTextConverter()
+    preprocessor = PreProcessor(
+        clean_empty_lines=True,
+        clean_whitespace=True,
+        clean_header_footer=True,
+        split_by="word",
+        split_length=300,
+        split_overlap=20,
+        split_respect_sentence_boundary=True,
+    )
+
+    retriever = EmbeddingRetriever(
+        document_store=document_store,
+        embedding_model="sentence-transformers/msmarco-bert-base-dot-v5",
+        model_format="sentence_transformers",
+    )
+
+    # indexing pipeline
+    p = Pipeline()
+    p.add_node(
+        component=file_type_classifier, name="FileTypeClassifier", inputs=["File"]
+    )
+    p.add_node(
+        component=text_converter,
+        name="TextConverter",
+        inputs=["FileTypeClassifier.output_1"],
+    )
+    p.add_node(
+        component=pdf_converter,
+        name="PdfConverter",
+        inputs=["FileTypeClassifier.output_2"],
+    )
+    p.add_node(
+        component=md_converter,
+        name="MarkdownConverter",
+        inputs=["FileTypeClassifier.output_3"],
+    )
+    p.add_node(
+        component=docx_converter,
+        name="DocxConverter",
+        inputs=["FileTypeClassifier.output_4"],
+    )
+    p.add_node(
+        component=preprocessor,
+        name="Preprocessor",
+        inputs=["TextConverter", "PdfConverter", "MarkdownConverter", "DocxConverter"],
+    )
+    p.add_node(component=retriever, name="Retriever", inputs=["Preprocessor"])
+    p.add_node(component=document_store, name="DocumentStore", inputs=["Retriever"])
+
+    os.makedirs("uploads", exist_ok=True)
+    # Save the file to disk
+    file_path = os.path.join("uploads", filename.name)
+    with open(file_path, "wb") as f:
         f.write(file.getbuffer())
-    PDFReader = download_loader('PDFReader')
-    loader = PDFReader()
-    documents = loader.load_data(file=Path(f'{PATH_TO_PDFS}/{file.name}'))
-    index = GPTVectorStoreIndex.from_documents(documents, service_context=service_context)
-    index.storage_context.persist(persist_dir=os.path.join(PATH_TO_INDEXES,file.name))
+
+    # Run pipeline on document and add metadata to include doc name
+    p.run(
+        file_paths=["uploads/{0}".format(filename.name)],
+        meta={"document_name": filename.name},
+    )
+
+    # Once documents are ran through the pipeline, use this to add embeddings to the datastore
+    document_store.save(index_path="my_index.faiss", config_path="my_config.json")
+    print(
+        f"Docs match embedding count: {document_store.get_document_count() == document_store.get_embedding_count()}"
+    )
 
 
-#build index from docx
-def docx_to_index(file): 
-    with open(os.path.join(PATH_TO_DOCS,file.name), "wb") as f:
-        f.write(file.getbuffer())
-    DocxReader = download_loader("DocxReader")
-    loader = DocxReader()
-    documents = loader.load_data(file=Path(os.path.join(PATH_TO_DOCS,file.name)))
-    index = GPTVectorStoreIndex.from_documents(documents, service_context=service_context) 
-    index.storage_context.persist(persist_dir=os.path.join(PATH_TO_INDEXES,file.name)) 
+def rag_pipeline(query):
+    key = os.getenv("OPENAI_API_KEY")
+    os.environ['OPENAI_API_KEY'] = key
+    document_store = get_doc_store()
+    retriever = EmbeddingRetriever(
+        document_store=document_store,
+        embedding_model="sentence-transformers/multi-qa-mpnet-base-dot-v1",
+        top_k=5,
+    )
+    prompt_node = PromptNode(
+        model_name_or_path="gpt-3.5-turbo",
+        default_prompt_template="deepset/question-answering",
+        api_key=key,
+        max_length = 250,
+    )
 
-
-#query index using GPT
-def query_index(query_u):
-    index_to_use = get_manual()
-    storage_context = StorageContext.from_defaults(persist_dir=f"{PATH_TO_INDEXES}/{index_to_use}")
-    index = load_index_from_storage(storage_context, service_context=service_context)
-    query_engine = index.as_query_engine()
-    response = query_engine.query(query_u)
-    
-    st.session_state.past.append(query_u)
-    st.session_state.generated.append(response.response)   
+    p = Pipeline()
+    p.add_node(component=retriever, name="EmbeddingRetriever", inputs=["Query"])
+    p.add_node(
+        component=prompt_node, name="QAPromptNode", inputs=["EmbeddingRetriever"]
+    )
+    res = p.run(query=query)
+    return res
 
 
 def clear_convo():
-    st.session_state['past'] = []
-    st.session_state['generated'] = []
-
-
-def get_manual():
-    manual = st.session_state['manual']
-    print(manual)
-    return manual
+    st.session_state["messages"] = []
 
 
 def init():
-    st.set_page_config(page_title='PDF ChatBot', page_icon=':robot_face: ') 
-    st.sidebar.title('Available PDFs')
+    st.set_page_config(page_title="GPT RAG", page_icon=":robot_face: ")
+    st.sidebar.title("Available Indexes")
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = []
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     init()
 
-    clear_button = st.sidebar.button("Clear Conversation", key="clear") 
-    if clear_button:
-        clear_convo()
-
-    refresh_button = st.sidebar.button("Refresh Indexes", key="ref") 
-    if refresh_button:
-        st.session_state['manual'] = []
-
-    if 'generated' not in st.session_state:
-        st.session_state['generated'] = []
-
-    if 'past' not in st.session_state:
-        st.session_state['past'] = []
-
-    if 'manual' not in st.session_state:
-        st.session_state['manual'] = []
-
-    with st.form(key='my_form', clear_on_submit=True):
-        user_input= st.text_area("You:", key="input", height=75) 
-        submit_button =st.form_submit_button(label="Submit")
-
-    if user_input and submit_button:
-        query_index(query_u=user_input)
-
-    if st.session_state['generated']:
-        for i in range(len(st.session_state['generated'])-1, -1, -1): 
-            message(st.session_state['generated'][i], key=str(i))
-            message(st.session_state['past'][i], is_user=True, key=str(i) + "user")
-    
-    manual_names = os.listdir(PATH_TO_INDEXES)
-    manual = st.sidebar. radio("Choose a manual:", manual_names, key='init')
-    st.session_state['manual'] = manual
-    file = st.file_uploader("Choose a PDF file to index...")
-    clicked = st.button('Upload File', key='Upload')
+    clear_button = st.sidebar.button(
+        "Clear Conversation", key="clear", on_click=clear_convo
+    )
+    file = st.file_uploader("Choose a file to index...", type=["docx", "pdf", "txt"])
+    clicked = st.button("Upload File", key="Upload")
     if file and clicked:
-        extension = file.name[-4:]
-        
-        match extension:
-            case 'docx':
-                with st.spinner('Wait for it...'):
-                    docx_to_index(file)
-                st.success('Indexed {0}! Refresh to update indexes.'.format(file.name))
-            case '.pdf':
-                with st.spinner('Wait for it...'):
-                    pdf_to_index(file)
-                st.success('Indexed {0}! Refresh to update indexes.'.format(file.name))
+        with st.spinner("Wait for it..."):
+            document_store = indexing_pipe(file)
+        st.success("Indexed {0}!".format(file.name))
+
+    user_input = st.chat_input("Say something")
+
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        res = rag_pipeline(user_input)
+        st.session_state.messages.append({"role": "assistant", "content": res["results"][0]})
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
