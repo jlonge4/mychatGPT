@@ -1,10 +1,8 @@
-llama_index
-langchain
 streamlit
-streamlit_chat
 pathlib
 openai
-PyPDF2
-doc2text
-fastapi 
-uvicorn
+farm-haystack[inference]
+farm-haystack[file-conversion]
+farm-haystack[pdf]
+nltk
+faiss-cpu
