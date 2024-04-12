@@ -2,6 +2,8 @@
 
 This project has evolved from a simple PDF chatbot to a sophisticated RAG (Retrieval-Augmented Generation) agent capable of accessing conversation history, retrieving context, summarizing documents, and answering follow-up questions based on user queries and intent detection. 
 
+![Example Conversation](examples/agent_rag.png)
+
 ## Installation
 
 To set up this project, you'll first need your OPENAI_API key. Next, ensure you have the necessary dependencies installed. You can install them via:
