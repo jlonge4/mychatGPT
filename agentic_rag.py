@@ -21,14 +21,18 @@ def get_doc_store():
     document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
     return document_store
 
-def write_documents(file):
 
+def write_documents(file):
     pipeline = Pipeline()
 
     pipeline.add_component("converter", PyPDFToDocument())
     pipeline.add_component("cleaner", DocumentCleaner())
-    pipeline.add_component("splitter", DocumentSplitter(split_by="word", split_length=350))
-    pipeline.add_component("embedder", OpenAIDocumentEmbedder(api_key=Secret.from_token(openai.api_key)))
+    pipeline.add_component(
+        "splitter", DocumentSplitter(split_by="word", split_length=350)
+    )
+    pipeline.add_component(
+        "embedder", OpenAIDocumentEmbedder(api_key=Secret.from_token(openai.api_key))
+    )
     pipeline.add_component("writer", DocumentWriter(document_store=document_store))
 
     pipeline.connect("converter", "cleaner")
@@ -43,42 +47,51 @@ def write_documents(file):
         f.write(file.getbuffer())
 
     pipeline.run({"converter": {"sources": [Path(file_path)]}})
-    st.success('Indexed Document!')
+    st.success("Indexed Document!")
 
 
 def chunk_documents(file):
     pipeline = Pipeline()
     pipeline.add_component("converter", PyPDFToDocument())
     pipeline.add_component("cleaner", DocumentCleaner())
-    pipeline.add_component("splitter", DocumentSplitter(split_by="word", split_length=3000))
+    pipeline.add_component(
+        "splitter", DocumentSplitter(split_by="word", split_length=3000)
+    )
 
     pipeline.connect("converter", "cleaner")
     pipeline.connect("cleaner", "splitter")
     file_path = os.path.join("uploads", file.name)
     docs = pipeline.run({"converter": {"sources": [file_path]}})
-    return [d.content for d in docs["splitter"]['documents']]
+    return [d.content for d in docs["splitter"]["documents"]]
 
 
 def query_pipeline(query):
     query_pipeline = Pipeline()
-    query_pipeline.add_component("text_embedder", OpenAITextEmbedder(Secret.from_token(openai.api_key)))
-    query_pipeline.add_component("retriever", InMemoryEmbeddingRetriever(document_store=document_store, top_k=4))
+    query_pipeline.add_component(
+        "text_embedder", OpenAITextEmbedder(Secret.from_token(openai.api_key))
+    )
+    query_pipeline.add_component(
+        "retriever", InMemoryEmbeddingRetriever(document_store=document_store, top_k=4)
+    )
     query_pipeline.connect("text_embedder.embedding", "retriever.query_embedding")
 
-    result = query_pipeline.run({"text_embedder":{"text": query}})
-    return (result['retriever']['documents'])
+    result = query_pipeline.run({"text_embedder": {"text": query}})
+    return result["retriever"]["documents"]
 
 
 def query_router(query):
-    generator = OpenAIChatGenerator(api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo")
+    generator = OpenAIChatGenerator(
+        api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
+    )
 
     system = """You are a professional decision making query router bot for a chatbot system that decides whether a user's query requires a summary, 
     a retrieval of extra information from a vector database, or a simple greeting/gratitude/salutation response. If the query
     requires a summary, you will reply with only "(1)". If the query requires extra information, you will reply with only "(2)".
-    If the query requires a simple greeting/gratitude/salutation response, you will reply with only "(3)"."""
+    If the query requires a simple greeting/gratitude/salutation/ or an answer to a follow up question based on conversation history 
+    response, you will reply with only "(3)"."""
 
     instruction = f"""You are given a user's query in the <query> field. You are responsible for routing the query to the appropriate
-    choice as described in the system response. <query>{query}</query>"""
+    choice as described in the system response. <query>{query}</query> You are also given the history of the conversation in the <history>{st.session_state.messages}</history> field."""
 
     messages = [ChatMessage.from_system(system), ChatMessage.from_user(instruction)]
     response = generator.run(messages)
@@ -86,7 +99,9 @@ def query_router(query):
 
 
 def map_summarizer(query, chunk):
-    generator = OpenAIChatGenerator(api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo")
+    generator = OpenAIChatGenerator(
+        api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
+    )
 
     system = """You are a professional corpus summarizer for a chatbot system. 
     You are responsible for summarizing a chunk of text according to a user's query."""
@@ -95,13 +110,15 @@ def map_summarizer(query, chunk):
     using the provided chunk in the <chunk> tags: <query>{query}</query>\n <chunk>{chunk}</chunk>"""
 
     messages = [ChatMessage.from_system(system), ChatMessage.from_user(instruction)]
-    print('chunk_summarizer')
+    print("chunk_summarizer")
     response = generator.run(messages)
     return response
 
 
 def reduce_summarizer(query, analyses):
-    generator = OpenAIChatGenerator(api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo")
+    generator = OpenAIChatGenerator(
+        api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
+    )
 
     system = """You are a professional corpus summarizer for a chatbot system. 
     You are responsible for summarizing a list of summaries according to a user's query."""
@@ -110,21 +127,29 @@ def reduce_summarizer(query, analyses):
     using the provided list of summaries in the <chunk> tags: <query>{query}</query>\n <chunk>{analyses}</chunk>"""
 
     messages = [ChatMessage.from_system(system), ChatMessage.from_user(instruction)]
-    print('chunk_summarizer')
+    print("chunk_summarizer")
     response = generator.run(messages)
     return response
 
 
 def simple_responder(query):
-    generator = OpenAIChatGenerator(api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo")
+    generator = OpenAIChatGenerator(
+        api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
+    )
 
-    system = """You are a professional greeting/gratitude/salutation responder for a chatbot system. 
+    system = """You are a professional greeting/gratitude/salutation/ follow up responder for a chatbot system. 
     You are responsible for responding politely to a user's query."""
 
     instruction = f"""You are given a user's query in the <query> field. Respond appropriately to the user's input: <query>{query}</query>"""
 
-    messages = [ChatMessage.from_system(system), ChatMessage.from_user(instruction)]
-    print('simple_responder')
+    messages = []
+    history = st.session_state.messages
+    messages.append(ChatMessage.from_system(system))
+    for i in range(0, len(history) - 1, 2):
+        messages.append(ChatMessage.from_user(history[i]["content"]))
+        messages.append(ChatMessage.from_assistant(history[i + 1]["content"]))
+    messages.append(ChatMessage.from_user(instruction))
+    print("simple_responder")
     response = generator.run(messages)
     return response
 
@@ -145,7 +170,9 @@ def summary_tool(query, file):
 def context_tool(query):
     context = query_pipeline(query)
     context = [c.content for c in context]
-    generator = OpenAIChatGenerator(api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo")
+    generator = OpenAIChatGenerator(
+        api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
+    )
 
     system = """You are a professional Q/A responder for a chatbot system. 
     You are responsible for responding to a user query using ONLY the context provided within the <context> tags."""
@@ -158,23 +185,23 @@ def context_tool(query):
     return response
 
 
-class RAGAgent():
+class RAGAgent:
     def __init__(self):
         self.loops = 0
 
     def invoke_agent(self, query, file):
-        intent = query_router(query)['replies'][0].content.strip()
+        intent = query_router(query)["replies"][0].content.strip()
 
-        if intent == '(1)':
-            st.success('Retrieving Summary...')
-            response = summary_tool(query, file)['replies'][0].content
-        elif intent == '(2)':
-            st.success('Retrieving Context...')
-            response = context_tool(query)['replies'][0].content
-        elif intent == '(3)':
-            response = simple_responder(query)['replies'][0].content
+        if intent == "(1)":
+            st.success("Retrieving Summary...")
+            response = summary_tool(query, file)["replies"][0].content
+        elif intent == "(2)":
+            st.success("Retrieving Context...")
+            response = context_tool(query)["replies"][0].content
+        elif intent == "(3)":
+            response = simple_responder(query)["replies"][0].content
         return response
- 
+
 
 def clear_convo():
     st.session_state["messages"] = []
