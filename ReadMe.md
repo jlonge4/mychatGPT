@@ -1,22 +1,33 @@
-# GPT -> PDF Chatbot
+# RAG Agent: PDF Assistant
 
-
-After seeing much desire for a GPT chatbot that uses your own PDFs, I decided to code this project. I hope you enjoy it!
+This project has evolved from a simple PDF chatbot to a sophisticated RAG (Retrieval-Augmented Generation) agent capable of accessing conversation history, retrieving context, summarizing documents, and answering follow-up questions based on user queries and intent detection. 
 
 ## Installation
 
-To set up this project, first you need to add your OPENAI_API key as an env variable, or add it on line 13 of the .py file and deleting line 12. Next, run pip install -r /path/to/requirements.txt. Lastly, put all of your PDFs you wish to chat with in a central repository, and add the path to PATH_TO_PDFs in the .py file.
+To set up this project, you'll first need your OPENAI_API key. Next, ensure you have the necessary dependencies installed. You can install them via:
 
+`pip install -r requirements.txt`
 
 ## Usage
 
-Use the command python -m streamlit run "path/to/project/gpt_custkb.py". This will start the app in your browser. Once you have uploaded your PDFs, refresh the browser, select a manual, and ask away!
+To launch the RAG agent, run the command:
+
+`python -m streamlit run agentic_rag.py`
+
+
+This will start the Streamlit app in your browser. Once launched, you can upload your PDFs and start querying naturally for summaries, in depth queries, and follow up questions!
+
+## Features
+
+- **Conversation History**: The RAG agent can access conversation history to maintain context and provide more relevant responses.
+- **Document Summarization**: It can summarize documents to provide concise answers or overviews.
+- **Follow-up Answers**: The agent can answer follow-up questions based on previous interactions and the current conversation context.
+- **Logical Intent Determination**: It uses logic to determine user intent, ensuring accurate responses.
+- **PDF Selection**: Users can upload and select PDF manuals directly within the app interface.
 
 ## History
 
-WORK IN PROGRESS
-
-Currently the .py file is all you need to produce the functionality shown in the video. Manual/PDF selection is not working as of yet, but due to the questions about how to make this work I wanted to provide some source code for the time being. Follow for updates as I change this project into something that allows you to run locally and upload your PDFs, then select them on the sidebar as you wish. Thanks!
+This project is an ongoing effort to enhance the capabilities of the RAG agent. While the functionality is currently demonstrated in the provided .py file, further developments are in progress. Stay tuned for updates as I transition this project into a fully functional application that enables local execution and PDF selection through a user-friendly interface.
 
 ## Credits
 
@@ -25,3 +36,6 @@ TODO: Write credits
 ## License
 
 TODO: Write license
+
+Enjoy interacting with your documents through the RAG Agent!
+

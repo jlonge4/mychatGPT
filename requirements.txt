@@ -1,8 +1,4 @@
 streamlit
-pathlib
+haystack-ai
 openai
-farm-haystack[inference]
-farm-haystack[file-conversion]
-farm-haystack[pdf]
-nltk
-faiss-cpu
+pypdf
