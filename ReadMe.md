@@ -1,4 +1,4 @@
-# RAG Agent: PDF Assistant
+# RAG Agent: PDF Assistant 🚀🤖
 
 This project has evolved from a simple PDF chatbot to a sophisticated RAG (Retrieval-Augmented Generation) agent capable of accessing conversation history, retrieving context, summarizing documents, and answering follow-up questions based on user queries and intent detection. 
 
@@ -31,11 +31,11 @@ This project is an ongoing effort to enhance the capabilities of the RAG agent. 
 
 ## Credits
 
-TODO: Write credits
+Your's truly 😅
 
 ## License
 
-TODO: Write license
+Apache2.0
 
-Enjoy interacting with your documents through the RAG Agent!
+Enjoy interacting with your documents through this intelligent RAG Agent!
 
