@@ -213,6 +213,7 @@ class RAGAgent:
             st.success("Retrieving Context...")
             response = context_tool(query)["replies"][0].content
         elif intent == "(3)":
+            st.success("Retrieving Simple Response...")
             response = simple_responder(query)["replies"][0].content
         return response
 
@@ -236,6 +237,10 @@ if __name__ == "__main__":
 
     # streamlit components
     api_key = st.sidebar.text_input("OpenAI API Key", type="password")
+    st.sidebar.markdown(
+        """This app demonstrates agentic Retrieval Augmented Generation (RAG). It is capable of routing a user query to the appropriate choice 
+        of either summarizing a document, providing extra information from a vector database, or providing a simple follow up response."""
+    )
     openai.api_key = api_key
     clear_button = st.sidebar.button(
         "Clear Conversation", key="clear", on_click=clear_convo
