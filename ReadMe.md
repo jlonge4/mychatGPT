@@ -17,7 +17,7 @@ To launch the RAG agent, run the command:
 `python -m streamlit run agentic_rag.py`
 
 
-This will start the Streamlit app in your browser. Once launched, you can upload your PDFs and start querying naturally for summaries, in depth queries, and follow up questions!
+This will start the Streamlit app in your browser. Once launched, you can upload your PDFs or DOCx and start querying naturally for summaries, in depth queries, and follow up questions!
 
 ## Features
 
