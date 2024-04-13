@@ -14,6 +14,7 @@ from haystack.dataclasses import ChatMessage
 from haystack.components.generators.chat import OpenAIChatGenerator
 import concurrent.futures
 import os
+from utils.custom_converters import DocxToTextConverter
 
 
 @st.cache_resource()
@@ -25,7 +26,11 @@ def get_doc_store():
 def write_documents(file):
     pipeline = Pipeline()
 
-    pipeline.add_component("converter", PyPDFToDocument())
+    if file.name.endswith(".docx"):
+        pipeline.add_component("converter", DocxToTextConverter())
+    else:
+        pipeline.add_component("converter", PyPDFToDocument())
+
     pipeline.add_component("cleaner", DocumentCleaner())
     pipeline.add_component(
         "splitter", DocumentSplitter(split_by="word", split_length=350)
@@ -52,7 +57,10 @@ def write_documents(file):
 
 def chunk_documents(file):
     pipeline = Pipeline()
-    pipeline.add_component("converter", PyPDFToDocument())
+    if file.name.endswith(".docx"):
+        pipeline.add_component("converter", DocxToTextConverter())
+    else:
+        pipeline.add_component("converter", PyPDFToDocument())
     pipeline.add_component("cleaner", DocumentCleaner())
     pipeline.add_component(
         "splitter", DocumentSplitter(split_by="word", split_length=3000)
