@@ -236,7 +236,6 @@ if __name__ == "__main__":
     agent = RAGAgent()
 
     # streamlit components
-    # add cool titly with robot emoji called agentic rag over top of uploader
     st.title("Agentic RAG :robot_face:")
 
     api_key = st.sidebar.text_input("OpenAI API Key", type="password")
