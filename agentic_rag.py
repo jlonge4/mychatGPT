@@ -59,10 +59,14 @@ def write_documents(file):
 
 def chunk_documents(file):
     pipeline = Pipeline()
+
     if file.name.endswith(".docx"):
         pipeline.add_component("converter", DocxToTextConverter())
+    elif file.name.endswith(".txt"):
+        pipeline.add_component("converter", TextFileToDocument())
     else:
         pipeline.add_component("converter", PyPDFToDocument())
+
     pipeline.add_component("cleaner", DocumentCleaner())
     pipeline.add_component(
         "splitter", DocumentSplitter(split_by="word", split_length=3000)
