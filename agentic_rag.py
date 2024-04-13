@@ -6,10 +6,14 @@ from haystack.components.converters.txt import TextFileToDocument
 from haystack.components.preprocessors import DocumentCleaner, DocumentSplitter
 from haystack.components.writers import DocumentWriter
 from haystack.components.embedders import OpenAIDocumentEmbedder, OpenAITextEmbedder
+from haystack.components.joiners import DocumentJoiner
 from haystack.utils import Secret
 from pathlib import Path
 import openai
-from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
+from haystack.components.retrievers.in_memory import (
+    InMemoryEmbeddingRetriever,
+    InMemoryBM25Retriever,
+)
 from haystack.dataclasses import ChatMessage
 from haystack.components.generators.chat import OpenAIChatGenerator
 import concurrent.futures
@@ -87,10 +91,21 @@ def query_pipeline(query):
     query_pipeline.add_component(
         "retriever", InMemoryEmbeddingRetriever(document_store=document_store, top_k=4)
     )
+    query_pipeline.add_component(
+        "bm25_retriever", InMemoryBM25Retriever(document_store=document_store, top_k=4)
+    )
+    query_pipeline.add_component(
+        "joiner",
+        DocumentJoiner(join_mode="reciprocal_rank_fusion", top_k=4, sort_by_score=True),
+    )
     query_pipeline.connect("text_embedder.embedding", "retriever.query_embedding")
+    query_pipeline.connect("bm25_retriever", "joiner")
+    query_pipeline.connect("retriever", "joiner")
 
-    result = query_pipeline.run({"text_embedder": {"text": query}})
-    return result["retriever"]["documents"]
+    result = query_pipeline.run(
+        {"text_embedder": {"text": query}, "bm25_retriever": {"query": query}}
+    )
+    return result["joiner"]["documents"]
 
 
 def query_router(query):
@@ -265,3 +280,9 @@ if __name__ == "__main__":
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+
+# TODO : Add more error handling and logging
+# TODO : Add more comments and docstrings
+# TODO : Add streaming responses
+# TODO : Add self rag loop through invoking agent until answer is found
+# TODO : Add URL abilities
