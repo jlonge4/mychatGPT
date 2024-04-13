@@ -4,7 +4,8 @@ This project has evolved from a simple PDF chatbot to a sophisticated RAG (Retri
 
 Try it out yourself at ![Agentic-RAG](https://mychatgpt-p4vd2e8hpxeqwk5y8z52u2.streamlit.app)
 
-![Example Conversation](examples/agent_rag.png)
+Screenshot:
+  ![Example Conversation](examples/agent_rag.png)
 
 ## Installation
 
