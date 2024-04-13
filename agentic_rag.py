@@ -2,8 +2,8 @@ import streamlit as st
 from haystack import Pipeline
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from haystack.components.converters import PyPDFToDocument
-from haystack.components.preprocessors import DocumentCleaner
-from haystack.components.preprocessors import DocumentSplitter
+from haystack.components.converters.txt import TextFileToDocument
+from haystack.components.preprocessors import DocumentCleaner, DocumentSplitter
 from haystack.components.writers import DocumentWriter
 from haystack.components.embedders import OpenAIDocumentEmbedder, OpenAITextEmbedder
 from haystack.utils import Secret
@@ -28,6 +28,8 @@ def write_documents(file):
 
     if file.name.endswith(".docx"):
         pipeline.add_component("converter", DocxToTextConverter())
+    elif file.name.endswith(".txt"):
+        pipeline.add_component("converter", TextFileToDocument())
     else:
         pipeline.add_component("converter", PyPDFToDocument())
 
