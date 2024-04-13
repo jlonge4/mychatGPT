@@ -240,7 +240,6 @@ if __name__ == "__main__":
     st.sidebar.markdown(
         """This app demonstrates agentic Retrieval Augmented Generation (RAG). It is capable of routing a user query to the appropriate choice 
         of either summarizing a document, providing extra information from a vector database, or providing a simple follow up response.
-        
         The agent itself does not depend on any orchestrator (eg: llama-index, langchain, etc.) and uses haystack-ai only to index and retrieve documents."""
     )
     openai.api_key = api_key
