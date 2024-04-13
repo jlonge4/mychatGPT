@@ -25,7 +25,7 @@ This will start the Streamlit app in your browser. Once launched, you can upload
 - **Document Summarization**: It can summarize documents to provide concise answers or overviews.
 - **Follow-up Answers**: The agent can answer follow-up questions based on previous interactions and the current conversation context.
 - **Logical Intent Determination**: It uses logic to determine user intent, ensuring accurate responses.
-- **PDF Selection**: Users can upload and select PDF/DOCX manuals directly within the app interface.
+- **Supported File Types**: Users can upload and select PDF/DOCX manuals directly within the app interface.
 
 ## History
 
