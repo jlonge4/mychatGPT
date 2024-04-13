@@ -2,9 +2,10 @@
 
 This project has evolved from a simple PDF chatbot to a sophisticated RAG (Retrieval-Augmented Generation) agent capable of accessing conversation history, retrieving context, summarizing documents, and answering follow-up questions based on user queries and intent detection. 
 
-Try it out yourself at ![Agentic-RAG](https://mychatgpt-p4vd2e8hpxeqwk5y8z52u2.streamlit.app/)
+Try it out yourself at [agentic-rag](https://mychatgpt-p4vd2e8hpxeqwk5y8z52u2.streamlit.app/)
 
-![Example Conversation](examples/agent_rag.png)
+Screenshot:
+  ![Example Conversation](examples/agent_rag.png)
 
 ## Installation
 
