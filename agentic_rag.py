@@ -23,11 +23,13 @@ from utils.custom_converters import DocxToTextConverter
 
 @st.cache_resource()
 def get_doc_store():
+    """Get the document store for indexing and retrieval."""
     document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
     return document_store
 
 
 def write_documents(file):
+    """Convert and write the documents to the document store."""
     pipeline = Pipeline()
 
     if file.name.endswith(".docx"):
@@ -62,6 +64,7 @@ def write_documents(file):
 
 
 def chunk_documents(file):
+    """Chunk the documents for summarization."""
     pipeline = Pipeline()
 
     if file.name.endswith(".docx"):
@@ -84,6 +87,7 @@ def chunk_documents(file):
 
 
 def query_pipeline(query):
+    """Query the pipeline for context using hybrid retrieval and reciprocal rank fusion."""
     query_pipeline = Pipeline()
     query_pipeline.add_component(
         "text_embedder", OpenAITextEmbedder(Secret.from_token(openai.api_key))
@@ -109,6 +113,7 @@ def query_pipeline(query):
 
 
 def query_router(query):
+    """Route the query to the appropriate choice based on the system response."""
     generator = OpenAIChatGenerator(
         api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
     )
@@ -128,6 +133,7 @@ def query_router(query):
 
 
 def map_summarizer(query, chunk):
+    """Summarize each chunk of text based on a user's query."""
     generator = OpenAIChatGenerator(
         api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
     )
@@ -145,6 +151,7 @@ def map_summarizer(query, chunk):
 
 
 def reduce_summarizer(query, analyses):
+    """Summarize the list of summaries into a final summary based on a user's query."""
     generator = OpenAIChatGenerator(
         api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
     )
@@ -162,6 +169,7 @@ def reduce_summarizer(query, analyses):
 
 
 def simple_responder(query):
+    """Respond to a user's query based on a simple follow up response."""
     generator = OpenAIChatGenerator(
         api_key=Secret.from_token(openai.api_key), model="gpt-4-turbo"
     )
@@ -184,6 +192,7 @@ def simple_responder(query):
 
 
 def summary_tool(query, file):
+    """Summarize the document based on a user's query."""
     chunks = chunk_documents(file)
     # write async function to call chat generator using concurrent futures
     futures = []
@@ -197,6 +206,7 @@ def summary_tool(query, file):
 
 
 def context_tool(query):
+    """Retrieve context based on a user's query."""
     context = query_pipeline(query)
     context = [c.content for c in context]
     generator = OpenAIChatGenerator(
@@ -215,6 +225,7 @@ def context_tool(query):
 
 
 class RAGAgent:
+    """The RAG Agent class that routes a user query to the appropriate choice based on the system response."""
     def __init__(self):
         self.loops = 0
 
@@ -280,6 +291,7 @@ if __name__ == "__main__":
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+
 
 # TODO : Add more error handling and logging
 # TODO : Add more comments and docstrings
