@@ -226,6 +226,7 @@ def context_tool(query):
 
 class RAGAgent:
     """The RAG Agent class that routes a user query to the appropriate choice based on the system response."""
+
     def __init__(self):
         self.loops = 0
 
